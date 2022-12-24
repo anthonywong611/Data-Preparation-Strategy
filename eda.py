@@ -105,7 +105,8 @@ class Visualizer:
             [{'type': 'table'}, {'type': 'bar'}, {'type': 'pie'}]
          ] 
 
-         fig = make_subplots(rows=1, cols=3, specs=graphs_desc, subplot_titles=('', f'Top {n_levels} Counts by {col_name}', f'Percentage of {col_name}'))
+         fig = make_subplots(rows=1, cols=3, specs=graphs_desc, 
+         subplot_titles=('', f'Top {n_levels} Counts by {col_name}', f'Percentage of {col_name}'))
 
          # update figure title
          fig.update_layout(title=f"Visualizations of {col_name}")
@@ -133,7 +134,8 @@ class Visualizer:
             [{'type': 'table'}, {'type': 'bar'}, {'type': 'scatter'}]
          ]
 
-         fig = make_subplots(rows=1, cols=3, specs=graphs_desc, subplot_titles=('', f'Top 10 Counts by {col_name}', f'Cumulative Frequency of {col_name}'))
+         fig = make_subplots(rows=1, cols=3, specs=graphs_desc, 
+         subplot_titles=('', f'Top 10 Counts by {col_name}', f'Cumulative Frequency of {col_name}'))
 
          # update figure title
          fig.update_layout(title=f"Visualizations of {col_name}")
