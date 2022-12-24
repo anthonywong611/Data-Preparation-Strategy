@@ -24,7 +24,7 @@ class CategoricalVisualizer(Visualizer):
       """
       super().__init__(data)
 
-   def __create_summary_table(self, cols: Union[str, List[str]]) -> pd.DataFrame:
+   def create_summary_table(self, cols: Union[str, List[str]]) -> pd.DataFrame:
       """Create a summary table counting the total number of 
       observations grouping by the columns in <cols>.
       """
@@ -65,18 +65,18 @@ class CategoricalVisualizer(Visualizer):
             raise ValueError
          # ---One Variable--- #
          if n == 1:
-            return self.__get_one_category(cols[0])
+            return self.get_one_category(cols[0])
          # ---Two Variables--- #
          elif n == 2:
-            return self.__get_two_categories(cols)
+            return self.get_two_categories(cols)
          # ---Multiple Variables--- #
          else:
-            return self.__get_multiple_categories(cols)
+            return self.get_multiple_categories(cols)
       except ValueError:
          print("Please make sure that between 1 and 4 " + 
          "categorical column names are input. Try again.")
 
-   def __get_one_category(self, col: str) -> Optional[go.Figure]:
+   def get_one_category(self, col: str) -> Optional[go.Figure]:
       """Create visualizations for the category <col> 
       depending on the number of its levels.
 
@@ -117,11 +117,11 @@ class CategoricalVisualizer(Visualizer):
          # update figure title
          fig.update_layout(title=f"Visualizations of {col_name}")
          # count total number of records under each level of <col>
-         total_counts = self.__create_summary_table(col)
+         total_counts = self.create_summary_table(col)
 
          # create graphs
-         table = self.__create_plotly_table(total_counts)
-         bar_chart = self.__create_bar_chart(col, total_counts)
+         table = self.create_plotly_table(total_counts)
+         bar_chart = self.create_bar_chart(col, total_counts)
          pie_chart = px.pie(total_counts, names=col, values='total_count').data[0]
 
          # append the graphs to the figure
@@ -154,14 +154,14 @@ class CategoricalVisualizer(Visualizer):
          # update figure title
          fig.update_layout(title=f"Visualizations of {col_name}")
          # count total number of records under each level of <col>
-         total_counts = self.__create_summary_table(col)
+         total_counts = self.create_summary_table(col)
          # make sure the number of levels are limited to 10
          top_10_total_counts = total_counts.iloc[:10, :]
 
          # create graphs
-         table = self.__create_plotly_table(top_10_total_counts)
-         bar_chart = self.__create_bar_chart(col, top_10_total_counts)
-         line_chart = self.__create_line_chart(col, total_counts)
+         table = self.create_plotly_table(top_10_total_counts)
+         bar_chart = self.create_bar_chart(col, top_10_total_counts)
+         line_chart = self.create_line_chart(col, total_counts)
 
          # append the graphs to the figure
          fig.add_trace(table, row=1, col=1)
@@ -175,20 +175,20 @@ class CategoricalVisualizer(Visualizer):
 
          return fig
       
-   def __get_two_categories(self, cols: List[str]) -> go.Figure:
+   def get_two_categories(self, cols: List[str]) -> go.Figure:
       pass
 
-   def __get_multiple_categories(self, cols: List[str]) -> go.Figure:
+   def get_multiple_categories(self, cols: List[str]) -> go.Figure:
       pass
 
-   def __create_plotly_table(self, df: pd.DataFrame) -> go.Table:
+   def create_plotly_table(self, df: pd.DataFrame) -> go.Table:
       """Create a plotly graph object table of the dataframe <df>.
       """
       return go.Table(
          header={"values": df.columns}, cells={'values': df.T.values}
       )
 
-   def __create_bar_chart(self, cols: Union[str, List[str]], df: pd.DataFrame) -> go.Bar:
+   def create_bar_chart(self, cols: Union[str, List[str]], df: pd.DataFrame) -> go.Bar:
       """
       """
       if isinstance(cols, str):
@@ -196,7 +196,7 @@ class CategoricalVisualizer(Visualizer):
       else:
          pass
 
-   def __create_line_chart(self, col: str, df: pd.DataFrame) -> go.Line:
+   def create_line_chart(self, col: str, df: pd.DataFrame) -> go.Line:
       """Create a line chart showing the percentage of records taken up
       by the unique levels in <col>. <df> is the table showing the total 
       number of records under each level sorted in descending order.

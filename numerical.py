@@ -22,5 +22,5 @@ class NumericalVisualizer(Visualizer):
       """
       super().__init__(data)
 
-   def __create_summary_table(self, cols: Union[str, List[str]]) -> pd.DataFrame:
+   def create_summary_table(self, cols: Union[str, List[str]]) -> pd.DataFrame:
       pass

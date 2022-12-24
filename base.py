@@ -30,7 +30,7 @@ class Visualizer:
          elif data[column].dtype == object:
             self.categorical.append(column)
 
-   def __create_summary_table(self, cols: Union[str, List[str]]) -> pd.DataFrame:
+   def create_summary_table(self, cols: Union[str, List[str]]) -> pd.DataFrame:
       """Create a summary table for the set of variables indicated by <cols>.
       """
       raise NotImplementedError
