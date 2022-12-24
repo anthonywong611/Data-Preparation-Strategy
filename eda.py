@@ -144,7 +144,7 @@ class Visualizer:
             specs=graphs_desc, 
             subplot_titles=(
                '', 
-               f'Top {n_levels} Counts by {col_name}', 
+               f'Top {min(n_levels, 10)} Counts by {col_name}', 
                f'Cumulative Frequency of {col_name}'
             )
          )

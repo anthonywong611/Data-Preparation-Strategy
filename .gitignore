@@ -1,3 +1,4 @@
 env/
 *.csv
 *.ipynb
+__pycache__
