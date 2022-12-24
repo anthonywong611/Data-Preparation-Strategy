@@ -55,16 +55,12 @@ class Visualizer:
       """
       cols = [arg for arg in args if arg in self.categorical]
       n = len(cols)
-
       # See if all the arguments are categorical variables
       assert n == len(args)
-
       try:
-         
          # See if the number of arguments are in range
          if n == 0 or n > 4:
             raise ValueError
-
          # ---One Variable--- #
          if n == 1:
             return self.get_one_category(cols[0])
@@ -74,7 +70,6 @@ class Visualizer:
          # ---Multiple Variables--- #
          else:
             return self.get_multiple_categories(cols)
-         
       except ValueError:
          print("Please make sure that between 1 and 4 categorical column names are input. Try again.")
 
@@ -96,18 +91,26 @@ class Visualizer:
       col_name = ' '.join([x.capitalize() for x in col.lower().split('_')])
 
       if n_levels == 1:
-
          print(f'There is only one level in {col}')
-
       elif n_levels >= 2 and n_levels <= 6:
 
          graphs_desc = [
-            [{'type': 'table'}, {'type': 'bar'}, {'type': 'pie'}]
+            [
+               {'type': 'table'}, 
+               {'type': 'bar'}, 
+               {'type': 'pie'}
+            ]
          ] 
-
-         fig = make_subplots(rows=1, cols=3, specs=graphs_desc, 
-         subplot_titles=('', f'Top {n_levels} Counts by {col_name}', f'Percentage of {col_name}'))
-
+         fig = make_subplots(
+            rows=1, 
+            cols=3, 
+            specs=graphs_desc, 
+            subplot_titles=(
+               '', 
+               f'Top {n_levels} Counts by {col_name}', 
+               f'Percentage of {col_name}'
+            )
+         )
          # update figure title
          fig.update_layout(title=f"Visualizations of {col_name}")
          # count total number of records under each level of <col>
@@ -122,26 +125,33 @@ class Visualizer:
          fig.add_trace(table, row=1, col=1)
          fig.add_trace(bar_chart, row=1, col=2)
          fig.add_trace(pie_chart, row=1, col=3)
-
          # update figure axes
          fig.update_xaxes(title_text=col_name, row=1, col=2)
 
          return fig
 
       else:
-
          graphs_desc = [
-            [{'type': 'table'}, {'type': 'bar'}, {'type': 'scatter'}]
+            [
+               {'type': 'table'}, 
+               {'type': 'bar'}, 
+               {'type': 'scatter'}
+            ]
          ]
-
-         fig = make_subplots(rows=1, cols=3, specs=graphs_desc, 
-         subplot_titles=('', f'Top 10 Counts by {col_name}', f'Cumulative Frequency of {col_name}'))
-
+         fig = make_subplots(
+            rows=1, 
+            cols=3, 
+            specs=graphs_desc, 
+            subplot_titles=(
+               '', 
+               f'Top {n_levels} Counts by {col_name}', 
+               f'Cumulative Frequency of {col_name}'
+            )
+         )
          # update figure title
          fig.update_layout(title=f"Visualizations of {col_name}")
          # count total number of records under each level of <col>
          total_counts = self.create_count_table(col)
-
          # make sure the number of levels are limited to 10
          top_10_total_counts = total_counts.iloc[:10, :]
 
@@ -199,7 +209,8 @@ class Visualizer:
 
    def create_line_chart(self, col: str, df: pd.DataFrame) -> go.Line:
       """Create a line chart showing the percentage of records taken up
-      by the unique levels in <col>. <df> is the table showing the total number of records under each level sorted in descending order.
+      by the unique levels in <col>. <df> is the table showing the total 
+      number of records under each level sorted in descending order.
 
       df columns: [col, 'total_count']
       """
@@ -212,17 +223,17 @@ class Visualizer:
       percents = [percent / 100 for percent in range(10, 101, 5)]
       n_col_level = [df[df['cum_freq'] <= p].shape[0] for p in percents]
 
-      col_percentage = pd.DataFrame({'num_level': n_col_level, 'percentage': percents})
-
+      col_percentage = pd.DataFrame(
+         {
+            'num_level': n_col_level, 
+            'percentage': percents
+         }
+      )
       # Check the minimum number of levels that accounts for 95% of the entire dataset
       ninety_five = col_percentage[col_percentage['percentage'] == 0.95]
 
       # create the line graph
       fig = px.line(col_percentage, x='num_level', y='percentage', markers=True)
-
-      # Highlight the point for a better view
-      fig.add_hline(y=ninety_five['percentage'].item(), line_dash='dot')
-      fig.add_vline(x=ninety_five['num_level'].item(), line_dash='dot')
 
       return fig.data[0]
 
