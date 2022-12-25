@@ -14,18 +14,24 @@ class CategoricalVisualizer(Visualizer):
    """A visualization automator specializing in
    categorical variables.
    """
-   _df: pd.DataFrame
+   df: pd.DataFrame
    categorical: List[str]
    ordinal: List[str]
    numerical: List[str]
 
-   def __init__(self, data: pd.DataFrame, ordinal: Optional[List[str]] = None) -> None:
+   def __init__(self) -> None:
+      """Initialize the attributes.
+      """
+      super().__init__()
+      self.ordinal = []
+      
+   def read_data(self, data: pd.DataFrame, ordinal: Optional[List[str]] = None) -> None:
       """Initialize the dataset and classify the columns
       based on their data types.
 
       - Need to manually specify which categorical variables are ordinal
       """
-      super().__init__(data)
+      super().read_data(data=data)
       if ordinal is not None:
          # Make sure the ordinal variables are already in the categorical list
          try:
@@ -41,7 +47,7 @@ class CategoricalVisualizer(Visualizer):
       """Create a summary table counting the total number of 
       observations grouping by the columns in <cols>.
       """
-      cols_info = self._df.groupby(by=cols, as_index=False).size()
+      cols_info = self.df.groupby(by=cols, as_index=False).size()
       sorted_cols_info = cols_info.sort_values(by='size', ascending=False)
       # Update the column names
       if isinstance(cols, str):
@@ -108,7 +114,7 @@ class CategoricalVisualizer(Visualizer):
       - Limit to at most 10 levels for bar chart
       - No limit for levels for line chart
       """
-      n_levels = self._df[col].nunique()
+      n_levels = self.df[col].nunique()
       col_name = ' '.join([x.capitalize() for x in col.lower().split('_')])
 
       if n_levels == 1:
@@ -245,7 +251,7 @@ class CategoricalVisualizer(Visualizer):
       df columns: [col, 'total_count']
       """
       if isinstance(cols, str):
-         n_non_null_in_col = self._df.shape[0] - np.sum(self._df[cols].isna())
+         n_non_null_in_col = self.df.shape[0] - np.sum(self.df[cols].isna())
          # calculate the cumulative frequency of the levels of <col>
          df['cum_freq'] = df['total_count'].cumsum() / n_non_null_in_col
 

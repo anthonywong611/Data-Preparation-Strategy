@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 
 import pandas as pd
 
@@ -6,15 +6,22 @@ import pandas as pd
 class Visualizer:
    """A visualization automator of a dataset.
    """
-   _df: pd.DataFrame
+   df: Optional[pd.DataFrame]
    categorical: List[str]
    numerical: List[str]
 
-   def __init__(self, data=pd.DataFrame) -> None:
+   def __init__(self) -> None:
       """Initialize the dataset and classify the columns
       based on their data types.
       """
-      self._df = data
+      self.df = None
+      self.categorical = []
+      self.numerical = []
+
+   def read_data(self, data=pd.DataFrame) -> None:
+      """
+      """
+      self.df = data
       self.categorical = []
       self.numerical = []
 
