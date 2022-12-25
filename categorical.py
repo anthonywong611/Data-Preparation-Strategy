@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from base import Visualizer
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from plotly.subplots import make_subplots
 
 import numpy as np
@@ -16,13 +16,26 @@ class CategoricalVisualizer(Visualizer):
    """
    _df: pd.DataFrame
    categorical: List[str]
+   ordinal: List[str]
    numerical: List[str]
 
-   def __init__(self, data=pd.DataFrame) -> None:
+   def __init__(self, data: pd.DataFrame, ordinal: Optional[List[str]] = None) -> None:
       """Initialize the dataset and classify the columns
       based on their data types.
+
+      - Need to manually specify which categorical variables are ordinal
       """
       super().__init__(data)
+      if ordinal is not None:
+         # Make sure the ordinal variables are already in the categorical list
+         try:
+            for col in ordinal:
+               assert col in self.categorical
+            # Initialize the ordinal variable list
+            self.ordinal = ordinal
+         except AssertionError as error: 
+            print('The ordinal list is not yet registered as categorical. ' +
+            'Make sure all variables are string or object before registering it as ordinal.')
 
    def create_summary_table(self, cols: Union[str, List[str]]) -> pd.DataFrame:
       """Create a summary table counting the total number of 
@@ -63,15 +76,20 @@ class CategoricalVisualizer(Visualizer):
          # See if the number of arguments are in range
          if n == 0 or n > 4:
             raise ValueError
-         # ---One Variable--- #
-         if n == 1:
-            return self.get_one_category(cols[0])
-         # ---Two Variables--- #
-         elif n == 2:
-            return self.get_two_categories(cols)
-         # ---Multiple Variables--- #
-         else:
-            return self.get_multiple_categories(cols)
+
+         try:
+            # ---One Variable--- #
+            if n == 1:
+               return self.get_one_category(cols[0])
+            # ---Two Variables--- #
+            elif n == 2:
+               return self.get_two_categories(cols)
+            # ---Multiple Variables--- #
+            else:
+               return self.get_multiple_categories(cols)
+         except ValueError as error:
+            print(error)
+         
       except ValueError:
          print("Please make sure that between 1 and 4 " + 
          "categorical column names are input. Try again.")
@@ -121,12 +139,16 @@ class CategoricalVisualizer(Visualizer):
 
          # create graphs
          table = self.create_plotly_table(total_counts)
-         bar_chart = self.create_bar_chart(col, total_counts)
+         # should return as many bar graphs as the number of unique levels
+         bars = self.create_bar_chart(col, total_counts)  
          pie_chart = px.pie(total_counts, names=col, values='total_count').data[0]
 
-         # append the graphs to the figure
+         # table to the first column
          fig.add_trace(table, row=1, col=1)
-         fig.add_trace(bar_chart, row=1, col=2)
+         # bars to the second column
+         for level in range(n_levels):
+            fig.add_trace(bars[level], row=1, col=2)
+         # pie chart to the third column
          fig.add_trace(pie_chart, row=1, col=3)
          # update figure axes
          fig.update_xaxes(title_text=col_name, row=1, col=2)
@@ -134,6 +156,8 @@ class CategoricalVisualizer(Visualizer):
          return fig
 
       else:
+         # Limit the number of columns to 10 if necessary
+         allowed_n_levels = min(n_levels, 10)
          graphs_desc = [
             [
                {'type': 'table'}, 
@@ -147,26 +171,30 @@ class CategoricalVisualizer(Visualizer):
             specs=graphs_desc, 
             subplot_titles=(
                '', 
-               f'Top {min(n_levels, 10)} Counts by {col_name}', 
-               f'Cumulative Frequency of {col_name}'
+               f'Top {allowed_n_levels} Counts by {col_name}', 
+               f'Cumulative Probability of {col_name} Levels'
             )
          )
          # update figure title
          fig.update_layout(title=f"Visualizations of {col_name}")
          # count total number of records under each level of <col>
          total_counts = self.create_summary_table(col)
-         # make sure the number of levels are limited to 10
-         top_10_total_counts = total_counts.iloc[:10, :]
+         # make sure the number of levels are limited to at most 10
+         top_total_counts = total_counts.iloc[:allowed_n_levels, :]
 
          # create graphs
-         table = self.create_plotly_table(top_10_total_counts)
-         bar_chart = self.create_bar_chart(col, top_10_total_counts)
-         line_chart = self.create_line_chart(col, total_counts)
+         table = self.create_plotly_table(top_total_counts)
+         # should return at most 10 bar graphs 
+         bars = self.create_bar_chart(col, top_total_counts)
+         cum_prob = self.create_cum_freq_plot(col, total_counts)
 
-         # append the graphs to the figure
+         # append the table to the first column
          fig.add_trace(table, row=1, col=1)
-         fig.add_trace(bar_chart, row=1, col=2)
-         fig.add_trace(line_chart, row=1, col=3)
+         # append the bars to the second column
+         for level in range(allowed_n_levels):
+            fig.add_trace(bars[level], row=1, col=2)
+         # append the cumulative probability distribution plot to the third column
+         fig.add_trace(cum_prob, row=1, col=3)
 
          # update figure axes
          fig.update_xaxes(title_text=col_name, row=1, col=2)
@@ -188,41 +216,69 @@ class CategoricalVisualizer(Visualizer):
          header={"values": df.columns}, cells={'values': df.T.values}
       )
 
-   def create_bar_chart(self, cols: Union[str, List[str]], df: pd.DataFrame) -> go.Bar:
-      """
-      """
-      if isinstance(cols, str):
-         return px.bar(df, x=cols, y='total_count', text_auto=True).data[0]
-      else:
-         pass
+   def create_bar_chart(self, cols: Union[str, List[str]], df: pd.DataFrame) -> Tuple[go.Bar]:
+      """Create a bar chart showing the total count of the top levels under
+      the column <cols>. Each bar will be identified with a different color.
 
-   def create_line_chart(self, col: str, df: pd.DataFrame) -> go.Line:
-      """Create a line chart showing the percentage of records taken up
-      by the unique levels in <col>. <df> is the table showing the total 
-      number of records under each level sorted in descending order.
+      Preconditions:
+      - <df> has at most 10 levels under <cols>
+      """
+      colors = px.colors.qualitative.Plotly  # 10 colors
+
+      if isinstance(cols, str):
+         n_levels = df.shape[0]
+         fig = px.bar(
+            df, x=cols, y='total_count', 
+            text_auto=True, 
+            color=colors[:n_levels],  # each color corresponds to a bar graph
+            color_discrete_map='identity'
+         )
+         return fig.data
+      else:
+         levels = df.loc[:, cols]
+
+   def create_cum_freq_plot(self, cols: Union[str, List[str]], df: pd.DataFrame) -> go.Line:
+      """Create a cumulative frequency plot showing the percentage of records 
+      taken up by the unique tuple of levels in <col>. <df> is the table showing 
+      the total number of records under each level sorted in descending order.
 
       df columns: [col, 'total_count']
       """
-      n_non_null_in_col = self._df.shape[0] - np.sum(self._df[col].isna())
-      # calculate the cumulative frequency of the levels of <col>
-      df['cum_freq'] = df['total_count'].cumsum() / n_non_null_in_col
+      if isinstance(cols, str):
+         n_non_null_in_col = self._df.shape[0] - np.sum(self._df[cols].isna())
+         # calculate the cumulative frequency of the levels of <col>
+         df['cum_freq'] = df['total_count'].cumsum() / n_non_null_in_col
 
-      # calculate the number of top levels needed to make up for each 
-      # percent of the entire dataset on a 5% increment
-      percents = [percent / 100 for percent in range(10, 101, 5)]
-      n_col_level = [df[df['cum_freq'] <= p].shape[0] for p in percents]
+         # calculate the number of top levels needed to make up for each 
+         # percent of the entire dataset on a 5% increment
+         percents = [percent / 100 for percent in range(10, 101, 5)]
+         n_col_level = [df[df['cum_freq'] <= p].shape[0] for p in percents]
 
-      col_percentage = pd.DataFrame(
-         {
-            'num_level': n_col_level, 
-            'percentage': percents
-         }
-      )
-      # Check the minimum number of levels that accounts for 95% of the entire dataset
-      ninety_five = col_percentage[col_percentage['percentage'] == 0.95]
+         col_percentage = pd.DataFrame(
+            {
+               'num_level': n_col_level, 
+               'percentage': percents
+            }
+         )
+         # Check the minimum number of levels that accounts for 95% of the entire dataset
+         ninety_five = col_percentage[col_percentage['percentage'] == 0.95]
 
-      # create the line graph
-      fig = px.line(col_percentage, x='num_level', y='percentage', markers=True)
+         # create the line graph
+         fig = px.line(col_percentage, x='num_level', y='percentage', markers=True)
 
-      return fig.data[0]
+         return fig.data[0]
+      else:
+         pass
 
+
+if __name__ == '__main__':
+
+   import os
+
+   cdir = os.getcwd()
+   data = pd.read_csv(cdir + '/testCovidJan.csv')
+
+   data['Treatment'] = data['Treatment'].apply(str)
+   data['Region'] = data['Region'].apply(str)
+
+   visualizer = CategoricalVisualizer(data=data, ordinal=['Treatment', 'Region'])
