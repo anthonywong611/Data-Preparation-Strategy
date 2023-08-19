@@ -12,15 +12,19 @@ class NumericalVisualizer(Visualizer):
    """A visualization automator specializing in 
    numerical variables.
    """
-   _df: pd.DataFrame
+   df: Optional[pd.DataFrame]
    categorical: List[str]
+   ordinal: List[str]
    numerical: List[str]
 
-   def __init__(self, data=pd.DataFrame) -> None:
+   def __init__(self) -> None:
       """Initialize the dataset and classify the columns
       based on their data types.
       """
-      super().__init__(data)
+      super().__init__()
 
    def create_summary_table(self, cols: Union[str, List[str]]) -> pd.DataFrame:
+      pass
+
+   def get_visualizations(self, *args) -> Optional[go.Figure]:
       pass

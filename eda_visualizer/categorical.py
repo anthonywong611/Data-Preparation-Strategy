@@ -14,7 +14,7 @@ class CategoricalVisualizer(Visualizer):
    """A visualization automator specializing in
    categorical variables.
    """
-   df: pd.DataFrame
+   df: Optional[pd.DataFrame]
    categorical: List[str]
    ordinal: List[str]
    numerical: List[str]
@@ -23,25 +23,6 @@ class CategoricalVisualizer(Visualizer):
       """Initialize the attributes.
       """
       super().__init__()
-      self.ordinal = []
-      
-   def read_data(self, data: pd.DataFrame, ordinal: Optional[List[str]] = None) -> None:
-      """Initialize the dataset and classify the columns
-      based on their data types.
-
-      - Need to manually specify which categorical variables are ordinal
-      """
-      super().read_data(data=data)
-      if ordinal is not None:
-         # Make sure the ordinal variables are already in the categorical list
-         try:
-            for col in ordinal:
-               assert col in self.categorical
-            # Initialize the ordinal variable list
-            self.ordinal = ordinal
-         except AssertionError as error: 
-            print('The ordinal list is not yet registered as categorical. ' +
-            'Make sure all variables are string or object before registering it as ordinal.')
 
    def create_summary_table(self, cols: Union[str, List[str]]) -> pd.DataFrame:
       """Create a summary table counting the total number of 
@@ -57,7 +38,7 @@ class CategoricalVisualizer(Visualizer):
 
       return sorted_cols_info
 
-   def get_categorical_info(self, *args) -> Optional[go.Figure]:
+   def get_visualizations(self, *args) -> Optional[go.Figure]: 
       """Return the categorical visualizations of the columns 
       specified in the keyword arguments.
       
@@ -276,15 +257,3 @@ class CategoricalVisualizer(Visualizer):
       else:
          pass
 
-
-if __name__ == '__main__':
-
-   import os
-
-   cdir = os.getcwd()
-   data = pd.read_csv(cdir + '/testCovidJan.csv')
-
-   data['Treatment'] = data['Treatment'].apply(str)
-   data['Region'] = data['Region'].apply(str)
-
-   visualizer = CategoricalVisualizer(data=data, ordinal=['Treatment', 'Region'])
